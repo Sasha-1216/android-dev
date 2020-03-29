@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">project2</string>
+    <string name="studentName">Student Name</string>
+    <string name="redId">RedID</string>
+    <string name="email">Email</string>
+    <string name="courseNum">Course Number</string>
+    <string name="courseTitle">Course Title</string>
+    <string name="roomNum">Room Number</string>
+    <string name="startTime">StartTime</string>
+    <string name="student_name_saved">Name saved!</string>
+    <string name="student_red_id_saved">RedID saved!</string>
+    <string name="student_email_saved">Email saved!</string>
+    <string name="submit">SUBMIT</string>
+    <string name="save_file">storage.sav</string>
+    <string name="registered_courses">Registered Courses</string>
+</resources>
