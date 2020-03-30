@@ -158,14 +158,15 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             val x = event.values[0]
             val y = event.values[1]
             var hitEdge = false
+            val scale = 0.75f
 
             var newLines = ArrayList<Line>()
             for (line in canvas.lines) {
                 var newLine = Line(
-                    line.startX + -x / 2,
-                    line.startY + y / 2,
-                    line.endX + -x / 2,
-                    line.endY + y / 2,
+                    line.startX + -x * scale,
+                    line.startY + y * scale,
+                    line.endX + -x * scale,
+                    line.endY + y * scale,
                     line.paint
                 )
 
