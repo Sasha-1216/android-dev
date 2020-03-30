@@ -8,12 +8,10 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.hardware.*
 import android.util.Log
-import android.view.View.X
-import android.view.View.Y
-import kotlin.math.PI
-import kotlin.math.atan2
-import kotlin.math.pow
-import kotlin.math.sqrt
+import android.widget.Toast
+import android.hardware.SensorManager
+import kotlin.math.*
+
 
 var editMode = true
 
@@ -41,6 +39,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var goButtonState : GoButtonState
     private lateinit var sensorManager: SensorManager
     private var mGravity: Sensor? = null
+    private var mAccelerometer: Sensor? = null
+    private var mAccelerometerLastX = 0f
+    private var mAccelerometerLastY = 0f
+    private var mAccelerometerLastZ = 0f
+    private var mLastShakeUpdate = 0L
+    private var mLastShakeEvent = 0L
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,6 +58,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         goButtonState = GoButtonState(goButton, "GO")
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         mGravity = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY)
+        mAccelerometer = sensorManager.getDefaultSensor((Sensor.TYPE_ACCELEROMETER))
 
         clearButton.setOnClickListener {
             canvas.clearCanvas()
@@ -97,13 +102,46 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent) {
-        // The light sensor returns a single value.
-        // Many sensors return 3 values, one for each axis.
-        if (goButtonState.state == "STOP") {
+
+        if (editMode && event.sensor == mAccelerometer) {
+            val shakeThreshold = 800;
+            // only allow shake events every shakeEventPeriod milliseconds
+            val shakeEventPeriod = 1000
+            // attempt to detect shakes every shakeScanPeriod milliseconds
+            val shakeScanPeriod = 100
+
+            val curTime = System.currentTimeMillis()
+
+            // Update every 100ms.
+            if (curTime - mLastShakeUpdate > shakeScanPeriod) {
+                val diffTime = curTime - mLastShakeUpdate
+                mLastShakeUpdate = curTime
+
+                val x = event.values[0]
+                val y = event.values[1]
+                val z = event.values[2]
+                // Log.d("Sensor: ", "curTime: $curTime diffTime: $diffTime x: $x y: $y z: $z")
+
+                val speed =
+                    abs(x + y + z - mAccelerometerLastX - mAccelerometerLastY - mAccelerometerLastZ) / diffTime * 10000
+
+                if (speed > shakeThreshold && (mLastShakeUpdate - mLastShakeEvent) > shakeEventPeriod ) {
+                    Toast.makeText(this, "Erasing last line!", Toast.LENGTH_SHORT)
+                        .show()
+                    canvas.removeLastLine()
+                    mLastShakeEvent = mLastShakeUpdate
+                }
+                mAccelerometerLastX = x
+                mAccelerometerLastY = y
+                mAccelerometerLastZ = z
+            }
+        }
+
+        if (!editMode && event.sensor == mGravity) {
             val x = event.values[0]
             val y = event.values[1]
 
-            val roll = atan2(x, y) * 180/PI
+            val roll = atan2(x, y) * 180 / PI
             canvas.rotation = roll.toFloat()
         }
     }
@@ -111,6 +149,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     override fun onResume() {
         super.onResume()
         mGravity?.also { sensor ->
+            sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME)
+        }
+        mAccelerometer?.also { sensor ->
             sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME)
         }
     }

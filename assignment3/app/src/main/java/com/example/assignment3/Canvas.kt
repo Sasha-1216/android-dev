@@ -8,8 +8,6 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
-import androidx.core.content.ContextCompat.getColor
-import androidx.core.graphics.toColor
 import androidx.core.graphics.toColorLong
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -45,8 +43,9 @@ class Canvas : View {
         private var mCurY = 0f
         private var mStartX = 0f
         private var mStartY = 0f
-        private val lines = ArrayList<Line>()
+        private var lines = ArrayList<Line>()
         private var cc = false
+        private var blit = false
     }
 
     init {
@@ -67,12 +66,20 @@ class Canvas : View {
         {
             canvas.drawColor(R.color.colorBackground.toColorLong().toInt())
             cc = false
-        } else {
+        } else if (blit) {
+
+            canvas.drawColor(R.color.colorBackground.toColorLong().toInt())
             for (line in lines) {
                 line.drawOn(canvas)
             }
-
+            blit = false
+        } else {
+            // Draw line to canvas the user is currently creating
             canvas.drawLine(mStartX, mStartY, mCurX, mCurY, paint)
+
+            for (line in lines) {
+                line.drawOn(canvas)
+            }
         }
     }
 
@@ -156,11 +163,16 @@ class Canvas : View {
         return true
     }
 
+    fun removeLastLine() {
+        lines = ArrayList<Line>(lines.dropLast(1))
+        blit = true
+        invalidate()
+    }
+
     fun clearCanvas() {
         lines.clear()
         cc = true
         invalidate()
-        Log.d("Cleared Lines:", lines.toString())
     }
 
 }
