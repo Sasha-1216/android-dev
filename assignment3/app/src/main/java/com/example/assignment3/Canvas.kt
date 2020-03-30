@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
@@ -34,8 +35,11 @@ class Line {
 }
 
 class Canvas : View {
+
     constructor(context: Context) : super(context) {}
     constructor(context: Context, attributes: AttributeSet) : super(context, attributes) { }
+    var lines = ArrayList<Line>()
+    var blit = false
 
     companion object {
         private var paint = Paint()
@@ -43,9 +47,9 @@ class Canvas : View {
         private var mCurY = 0f
         private var mStartX = 0f
         private var mStartY = 0f
-        private var lines = ArrayList<Line>()
+
         private var cc = false
-        private var blit = false
+
     }
 
     init {

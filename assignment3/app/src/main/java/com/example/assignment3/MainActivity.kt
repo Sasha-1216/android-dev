@@ -10,10 +10,16 @@ import android.hardware.*
 import android.util.Log
 import android.widget.Toast
 import android.hardware.SensorManager
+import android.util.DisplayMetrics
+import android.util.TypedValue
+import android.view.Window
+import android.widget.Toolbar
 import kotlin.math.*
 
 
 var editMode = true
+var screenWidth = 0
+var screenHeight = 0
 
 class GoButtonState {
     var state : String
@@ -50,6 +56,17 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+
+        val displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
+        var actionBarSizeAttribute: IntArray = intArrayOf(R.attr.actionBarSize)
+        var a = obtainStyledAttributes(actionBarSizeAttribute)
+        var actionBarHeight = a.getDimensionPixelSize(0, -1)
+
+        val heightAdjust = 55
+        screenWidth = displayMetrics.widthPixels
+        screenHeight = displayMetrics.heightPixels - actionBarHeight - heightAdjust
+
         setContentView(R.layout.activity_main)
 
         canvas = findViewById(R.id.canvas)
@@ -125,7 +142,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 val speed =
                     abs(x + y + z - mAccelerometerLastX - mAccelerometerLastY - mAccelerometerLastZ) / diffTime * 10000
 
-                if (speed > shakeThreshold && (mLastShakeUpdate - mLastShakeEvent) > shakeEventPeriod ) {
+                if (speed > shakeThreshold && (mLastShakeUpdate - mLastShakeEvent) > shakeEventPeriod && canvas.lines.size > 0) {
                     Toast.makeText(this, "Erasing last line!", Toast.LENGTH_SHORT)
                         .show()
                     canvas.removeLastLine()
@@ -140,10 +157,44 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         if (!editMode && event.sensor == mGravity) {
             val x = event.values[0]
             val y = event.values[1]
+            var hitEdge = false
 
-            val roll = atan2(x, y) * 180 / PI
-            canvas.rotation = roll.toFloat()
+            var newLines = ArrayList<Line>()
+            for (line in canvas.lines) {
+                var newLine = Line(
+                    line.startX + -x / 2,
+                    line.startY + y / 2,
+                    line.endX + -x / 2,
+                    line.endY + y / 2,
+                    line.paint
+                )
+
+                hitEdge = edge(newLine)
+                if (hitEdge) {
+                    break
+                }
+
+                newLines.add(newLine)
+            }
+            if (!hitEdge) {
+                canvas.lines = newLines
+                canvas.blit = true
+                canvas.invalidate()
+            }
+
         }
+    }
+
+    fun edge(line: Line): Boolean {
+        if (line.startX <= 0 || line.startY <= 0 || line.endX <= 0 || line.endY <= 0) {
+            return true
+        }
+
+        if (line.startX >= screenWidth || line.startY >= screenHeight || line.endX >= screenWidth || line.endY >= screenHeight) {
+            return true
+        }
+
+        return false
     }
 
     override fun onResume() {
